@@ -67,21 +67,55 @@ export const createPostHandler = async (req: Request, res: Response) => {
 
 export const getAllPostsHandler = async (req: Request, res: Response) => {
   try {
-    const posts = await Post.find();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [posts, total] = await Promise.all([
+      Post.find().skip(skip).limit(limit),
+      Post.countDocuments()
+    ]);
+
     await storeDataInCache(REDIS_KEYS.ALL_POSTS, posts);
-    return res.status(HTTP_STATUS.OK).json(posts);
+    
+    return res.status(HTTP_STATUS.OK).json({
+      posts,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
   } catch (err: any) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: err.message });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
+      message: RESPONSE_MESSAGES.COMMON.SERVER_ERROR,
+      error: err.message 
+    });
   }
 };
 
 export const getFeaturedPostsHandler = async (req: Request, res: Response) => {
   try {
-    const featuredPosts = await Post.find({ isFeaturedPost: true });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 5;
+    const skip = (page - 1) * limit;
+
+    const [featuredPosts, total] = await Promise.all([
+      Post.find({ isFeaturedPost: true }).skip(skip).limit(limit),
+      Post.countDocuments({ isFeaturedPost: true })
+    ]);
+
     await storeDataInCache(REDIS_KEYS.FEATURED_POSTS, featuredPosts);
-    res.status(HTTP_STATUS.OK).json(featuredPosts);
+    
+    res.status(HTTP_STATUS.OK).json({
+      posts: featuredPosts,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
   } catch (err: any) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: err.message });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
+      message: RESPONSE_MESSAGES.COMMON.SERVER_ERROR,
+      error: err.message 
+    });
   }
 };
 
@@ -104,11 +138,28 @@ export const getPostByCategoryHandler = async (req: Request, res: Response) => {
 
 export const getLatestPostsHandler = async (req: Request, res: Response) => {
   try {
-    const latestPosts = await Post.find().sort({ timeOfPost: -1 });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [latestPosts, total] = await Promise.all([
+      Post.find().sort({ timeOfPost: -1 }).skip(skip).limit(limit),
+      Post.countDocuments()
+    ]);
+
     await storeDataInCache(REDIS_KEYS.LATEST_POSTS, latestPosts);
-    res.status(HTTP_STATUS.OK).json(latestPosts);
+    
+    res.status(HTTP_STATUS.OK).json({
+      posts: latestPosts,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
   } catch (err: any) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: err.message });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
+      message: RESPONSE_MESSAGES.COMMON.SERVER_ERROR,
+      error: err.message 
+    });
   }
 };
 

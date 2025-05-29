@@ -1,6 +1,3 @@
-import { Error as MongooseError } from 'mongoose';
-import { RESPONSE_MESSAGES } from './constants.js';
-
 interface ApiErrorParams {
   status: number;
   message?: string;
@@ -8,21 +5,23 @@ interface ApiErrorParams {
   stack?: string;
 }
 
-class ApiError extends MongooseError {
+class ApiError extends Error {
   public status: number;
   public data: null;
   public success: boolean;
   public errors: any[];
+
   constructor({
     status,
-    message = RESPONSE_MESSAGES.COMMON.SOMETHING_WRONG,
+    message = 'Something went wrong',
     errors = [],
     stack = '',
   }: ApiErrorParams) {
     super(message);
+
+    this.name = 'ApiError';
     this.status = status;
     this.data = null;
-    this.message = message;
     this.success = false;
     this.errors = errors;
 
